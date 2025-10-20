@@ -1,0 +1,102 @@
+version: '3.8'
+
+# Development Docker Compose - Hot reloading enabled
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: livemart-mongodb-dev
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: livemart_dev
+    volumes:
+      - mongodb_dev_data:/data/db
+    networks:
+      - livemart-dev-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: livemart-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - livemart-dev-network
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: livemart-elasticsearch-dev
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_dev_data:/usr/share/elasticsearch/data
+    networks:
+      - livemart-dev-network
+
+  # Backend API (Development mode with hot reload)
+  api:
+    image: node:18-alpine
+    container_name: livemart-api-dev
+    working_dir: /app
+    ports:
+      - "5000:5000"
+      - "9229:9229"  # Node.js debugging port
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/livemart_dev?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - JWT_SECRET=dev-jwt-secret-key
+      - JWT_REFRESH_SECRET=dev-refresh-secret-key
+    depends_on:
+      - mongodb
+      - redis
+      - elasticsearch
+    volumes:
+      - ../server:/app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - livemart-dev-network
+
+  # Frontend React App (Development mode with hot reload)
+  client:
+    image: node:18-alpine
+    container_name: livemart-client-dev
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - REACT_APP_SOCKET_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - api
+    volumes:
+      - ../client:/app
+    command: sh -c "npm install && npm start"
+    networks:
+      - livemart-dev-network
+    stdin_open: true
+    tty: true
+
+volumes:
+  mongodb_dev_data:
+  redis_dev_data:
+  elasticsearch_dev_data:
+
+networks:
+  livemart-dev-network:
+    driver: bridge

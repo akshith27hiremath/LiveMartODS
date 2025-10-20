@@ -1,0 +1,710 @@
+# Live MART - Web Application Structure with UPI Integration
+
+## System Architecture Overview
+
+### Core Technology Stack
+- **Frontend**: React.js 18+ with TypeScript
+- **Backend**: Node.js with Express.js
+- **Database**: MongoDB (primary) + Redis (caching/sessions)
+- **Authentication**: JWT tokens + OAuth 2.0
+- **Real-time**: Socket.io for live updates
+- **Payment**: UPI Integration (PhonePe/Google Pay/Paytm APIs)
+- **Maps**: Google Maps API
+- **Notifications**: Email (SendGrid) + SMS (Twilio)
+- **File Storage**: AWS S3 / Cloudinary
+- **Deployment**: Docker + AWS/DigitalOcean
+
+## Database Schema Design
+
+### User Management
+```
+Users Collection:
+- userId (ObjectId)
+- email, phone, password (hashed)
+- userType (CUSTOMER/RETAILER/WHOLESALER)
+- profile {name, address, location{lat, lng}, avatar}
+- isVerified, createdAt, lastActive
+- preferences {categories[], priceRange, deliveryRadius}
+```
+
+### Product & Inventory
+```
+Products Collection:
+- productId, name, description, category
+- images[], basePrice, unit, specifications
+- tags[], isActive, createdBy (wholesaler)
+
+Inventory Collection:
+- inventoryId, productId, ownerId (retailer/wholesaler)
+- currentStock, reservedStock, reorderLevel
+- sellingPrice, discounts[], availability
+- location, lastUpdated
+```
+
+### Orders & Transactions
+```
+Orders Collection:
+- orderId, customerId, retailerId, wholesalerId
+- items[{productId, quantity, price, subtotal}]
+- orderType (ONLINE/OFFLINE), status, totalAmount
+- deliveryAddress, scheduledDate, trackingInfo
+- paymentStatus, upiTransactionId, createdAt
+
+UPI_Transactions Collection:
+- transactionId, orderId, amount, upiId
+- paymentGateway (PHONEPE/GOOGLEPAY/PAYTM)
+- status, merchantTransactionId, timestamp
+- responseCode, responseMessage
+```
+
+## Module Implementation
+
+### Module 1: Registration & Authentication
+
+#### Registration Flow
+```
+RegistrationService:
+- Multi-role registration with role-specific form fields
+- OTP verification via SMS/email
+- Social login integration (Google/Facebook OAuth)
+- Location capture using Google Places API
+- Profile completion wizard
+
+Components:
+- RoleSelectionPage
+- RegistrationForm (dynamic based on role)
+- OTPVerificationPage
+- SocialLoginButtons
+- LocationPermissionHandler
+```
+
+#### Authentication System
+```
+AuthService:
+- JWT token generation/validation
+- Refresh token rotation
+- Session management with Redis
+- Role-based access control (RBAC)
+- Password reset functionality
+```
+
+### Module 2: User Dashboards
+
+#### Customer Dashboard
+```
+CustomerDashboard:
+- PersonalizedHomePage with recommendations
+- CategoryGrid with product counts
+- RecentOrdersWidget
+- NearbyStoresMap
+- WishlistQuickAccess
+- NotificationCenter
+
+ProductCatalog:
+- CategoryWiseProductList
+- ProductDetailPage with image gallery
+- StockAvailabilityIndicator
+- PriceComparisonWidget
+- ReviewsAndRatings
+```
+
+#### Retailer Dashboard
+```
+RetailerDashboard:
+- InventoryOverview (stock levels, low stock alerts)
+- SalesAnalytics (daily/weekly/monthly charts)
+- CustomerInsights (purchase patterns, demographics)
+- WholesalerOrders (pending, delivered)
+- QuickActions (add product, update price)
+
+InventoryManagement:
+- ProductManagementGrid
+- BulkPriceUpdateTool
+- StockLevelMonitor
+- SupplierOrderInterface
+- CustomerPurchaseHistory
+```
+
+#### Wholesaler Dashboard
+```
+WholesalerDashboard:
+- RetailerNetworkMap
+- BulkOrderManagement
+- InventoryDistribution
+- PricingStrategySetting
+- PerformanceMetrics
+
+RetailerManagement:
+- RetailerOnboarding
+- CreditLimitManagement
+- OrderApprovalSystem
+- TransactionHistory
+- RetailerPerformanceAnalytics
+```
+
+### Module 3: Search & Navigation
+
+#### Smart Search System
+```
+SearchService:
+- Elasticsearch integration for fast queries
+- Auto-complete with typo tolerance
+- Category-based filtering
+- Price range sliders
+- Stock availability filters
+- Location-based results
+
+SearchComponents:
+- SmartSearchBar with suggestions
+- AdvancedFilterPanel
+- SortingOptions (price, distance, rating, popularity)
+- MapViewToggle
+- SearchResultsGrid with pagination
+```
+
+#### Location Services
+```
+LocationService:
+- Browser geolocation API
+- Google Maps integration
+- Distance calculation and routing
+- Store availability radius
+- Dynamic delivery zones
+
+MapComponents:
+- InteractiveStoreMap
+- RouteOptimization
+- DeliveryZoneVisualization
+- NearbyStoresList
+- LocationBasedRecommendations
+```
+
+### Module 4: Order & Payment Management
+
+#### Order Processing System
+```
+OrderService:
+- Shopping cart management with localStorage persistence
+- Multi-vendor cart handling
+- Order validation and inventory check
+- Dynamic pricing calculation
+- Order routing (customer -> retailer -> wholesaler)
+
+OrderComponents:
+- ShoppingCartPage
+- CheckoutWizard (address, payment, confirmation)
+- OrderSummaryPage
+- RecurringOrderSetup
+- BulkOrderInterface (for retailers)
+```
+
+#### UPI Payment Integration
+```
+UPIPaymentService:
+- PhonePe Payment Gateway integration
+- Google Pay integration
+- Paytm Business integration
+- QR code generation for payments
+- Payment status verification
+- Automatic payment settlements
+- Transaction reconciliation
+
+PaymentComponents:
+- UPIPaymentSelector
+- QRCodePaymentDisplay
+- PaymentStatusTracker
+- TransactionHistory
+- RefundInterface
+- InvoiceGenerator
+```
+
+#### Order Tracking
+```
+TrackingService:
+- Real-time order status updates
+- Delivery personnel assignment
+- GPS tracking integration
+- Estimated delivery time calculation
+- Email/SMS notification triggers
+
+TrackingComponents:
+- OrderTrackingPage
+- StatusTimeline
+- DeliveryPersonContact
+- DeliveryProofUpload
+- FeedbackCollection
+```
+
+#### Calendar Integration
+```
+SchedulingService:
+- Offline order scheduling
+- Recurring order setup
+- Delivery slot management
+- Email reminders
+- Google Calendar integration
+
+Components:
+- DateTimePicker
+- RecurringOrderConfiguration
+- DeliverySlotSelector
+- CalendarIntegration
+- ReminderSettings
+```
+
+### Module 5: Feedback & Real-time Updates
+
+#### Feedback System
+```
+FeedbackService:
+- Multi-level feedback (product, service, delivery)
+- Rating aggregation and display
+- Review moderation
+- Feedback analytics
+- Response management
+
+FeedbackComponents:
+- StarRatingWidget
+- ReviewForm with image upload
+- FeedbackDisplayCard
+- ReviewSummaryChart
+- ResponseInterface
+```
+
+#### Real-time Notification System
+```
+NotificationService:
+- Email notifications (SendGrid)
+- SMS notifications (Twilio)
+- In-app notifications with Socket.io
+- Browser push notifications
+- Notification preferences management
+
+NotificationComponents:
+- NotificationCenter
+- NotificationSettingsPanel
+- PushNotificationHandler
+- EmailTemplateEngine
+- SMSGatewayInterface
+```
+
+## Advanced Features for High Scores
+
+### AI-Powered Recommendations
+```
+RecommendationEngine:
+- Collaborative filtering
+- Content-based filtering
+- Purchase history analysis
+- Seasonal trend prediction
+- Cross-selling suggestions
+
+Machine Learning Components:
+- UserBehaviorTracker
+- ProductSimilarityCalculator
+- TrendAnalyzer
+- PersonalizationEngine
+- A/B TestingFramework
+```
+
+### Analytics & Business Intelligence
+```
+AnalyticsService:
+- Customer behavior analytics
+- Sales performance metrics
+- Inventory optimization insights
+- Market trend analysis
+- Predictive analytics
+
+BI Dashboard:
+- ExecutiveSummaryPage
+- SalesReportGenerator
+- CustomerSegmentationChart
+- InventoryAnalyticsPanel
+- PredictiveInsights
+```
+
+## Tech Stack Details
+
+### Frontend Stack
+```
+React.js Framework:
+- React 18+ with Concurrent Features
+- TypeScript for type safety
+- React Router for navigation
+- React Query for data fetching
+- Zustand for state management
+- Tailwind CSS for styling
+- React Hook Form for form handling
+- Chart.js for analytics visualization
+- Socket.io-client for real-time features
+```
+
+### Backend Stack
+```
+Node.js Backend:
+- Express.js framework
+- TypeScript for backend development
+- Mongoose for MongoDB ODM
+- Redis for session management
+- Socket.io for real-time communication
+- Multer for file uploads
+- Joi for data validation
+- Winston for logging
+- Helmet for security
+- Rate limiting with express-rate-limit
+```
+
+### Database & Storage
+```
+Data Storage:
+- MongoDB for primary data storage
+- Redis for caching and sessions
+- AWS S3 for file storage
+- Elasticsearch for search functionality
+```
+
+## Folder Structure
+
+```
+livemart-web/
+├── client/                          # React frontend
+│   ├── public/
+│   │   ├── index.html
+│   │   └── favicon.ico
+│   ├── src/
+│   │   ├── components/              # Reusable UI components
+│   │   │   ├── common/
+│   │   │   ├── forms/
+│   │   │   ├── layout/
+│   │   │   └── ui/
+│   │   ├── pages/                   # Page components
+│   │   │   ├── auth/
+│   │   │   ├── customer/
+│   │   │   ├── retailer/
+│   │   │   ├── wholesaler/
+│   │   │   └── admin/
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── services/                # API service functions
+│   │   ├── store/                   # State management
+│   │   ├── utils/                   # Utility functions
+│   │   ├── types/                   # TypeScript type definitions
+│   │   ├── constants/               # Application constants
+│   │   └── styles/                  # Global styles
+│   ├── package.json
+│   └── tsconfig.json
+├── server/                          # Node.js backend
+│   ├── src/
+│   │   ├── controllers/             # Request handlers
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── user.controller.ts
+│   │   │   ├── product.controller.ts
+│   │   │   ├── order.controller.ts
+│   │   │   └── payment.controller.ts
+│   │   ├── middleware/              # Express middleware
+│   │   │   ├── auth.middleware.ts
+│   │   │   ├── validation.middleware.ts
+│   │   │   └── error.middleware.ts
+│   │   ├── models/                  # Database models
+│   │   │   ├── User.model.ts
+│   │   │   ├── Product.model.ts
+│   │   │   ├── Order.model.ts
+│   │   │   └── UPITransaction.model.ts
+│   │   ├── routes/                  # API routes
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── user.routes.ts
+│   │   │   ├── product.routes.ts
+│   │   │   ├── order.routes.ts
+│   │   │   └── payment.routes.ts
+│   │   ├── services/                # Business logic
+│   │   │   ├── auth.service.ts
+│   │   │   ├── email.service.ts
+│   │   │   ├── sms.service.ts
+│   │   │   ├── upi.service.ts
+│   │   │   └── search.service.ts
+│   │   ├── utils/                   # Utility functions
+│   │   │   ├── logger.ts
+│   │   │   ├── validation.ts
+│   │   │   └── helpers.ts
+│   │   ├── config/                  # Configuration files
+│   │   │   ├── database.ts
+│   │   │   ├── redis.ts
+│   │   │   └── index.ts
+│   │   ├── types/                   # TypeScript interfaces
+│   │   └── app.ts                   # Express app setup
+│   ├── package.json
+│   └── tsconfig.json
+├── shared/                          # Shared types and utilities
+│   ├── types/
+│   └── constants/
+├── docker/                          # Docker configuration
+│   ├── Dockerfile.client
+│   ├── Dockerfile.server
+│   └── docker-compose.yml
+├── nginx/                           # Nginx configuration
+│   └── nginx.conf
+├── scripts/                         # Deployment scripts
+├── docs/                           # Documentation
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+## Docker Configuration
+
+### Docker Compose Structure
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: livemart-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - livemart-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: livemart-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - livemart-network
+
+  # Elasticsearch for Search
+  elasticsearch:
+    image: elasticsearch:8.8.0
+    container_name: livemart-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - livemart-network
+
+  # Backend API
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.server
+    container_name: livemart-api
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/livemart?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - mongodb
+      - redis
+      - elasticsearch
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    networks:
+      - livemart-network
+
+  # Frontend React App
+  client:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.client
+    container_name: livemart-client
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+    depends_on:
+      - api
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - livemart-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: livemart-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - client
+      - api
+    networks:
+      - livemart-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+  elasticsearch_data:
+
+networks:
+  livemart-network:
+    driver: bridge
+```
+
+### Dockerfile Examples
+```dockerfile
+# docker/Dockerfile.server
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY server/package*.json ./
+RUN npm ci --only=production
+
+COPY server/ .
+
+EXPOSE 5000
+
+CMD ["npm", "start"]
+```
+
+```dockerfile
+# docker/Dockerfile.client
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+COPY client/package*.json ./
+RUN npm ci
+
+COPY client/ .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 3000
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+## Required API Keys & Environment Variables
+
+### Environment Configuration
+```bash
+# .env file structure
+
+# Application
+NODE_ENV=development
+PORT=5000
+CLIENT_URL=http://localhost:3000
+
+# Database
+MONGODB_URI=mongodb://localhost:27017/livemart
+REDIS_URL=redis://localhost:6379
+ELASTICSEARCH_URL=http://localhost:9200
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key
+JWT_REFRESH_SECRET=your-super-secret-refresh-key
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+FACEBOOK_APP_ID=your-facebook-app-id
+FACEBOOK_APP_SECRET=your-facebook-app-secret
+
+# UPI Payment Gateways
+PHONEPE_MERCHANT_ID=your-phonepe-merchant-id
+PHONEPE_SALT_KEY=your-phonepe-salt-key
+PHONEPE_SALT_INDEX=1
+PHONEPE_HOST_URL=https://api-preprod.phonepe.com/apis/pg-sandbox
+
+GOOGLE_PAY_MERCHANT_ID=your-google-pay-merchant-id
+GOOGLE_PAY_ENVIRONMENT=TEST
+
+PAYTM_MERCHANT_ID=your-paytm-merchant-id
+PAYTM_MERCHANT_KEY=your-paytm-merchant-key
+PAYTM_ENVIRONMENT=staging
+
+# Google Services
+GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+GOOGLE_PLACES_API_KEY=your-google-places-api-key
+
+# Notification Services
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDGRID_FROM_EMAIL=noreply@livemart.com
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_PHONE_NUMBER=your-twilio-phone-number
+
+# File Storage
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_S3_BUCKET=livemart-files
+AWS_REGION=us-east-1
+
+# Cloudinary (Alternative to S3)
+CLOUDINARY_CLOUD_NAME=your-cloudinary-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+# Analytics (Optional)
+GOOGLE_ANALYTICS_ID=your-ga-id
+HOTJAR_ID=your-hotjar-id
+
+# Monitoring (Optional)
+SENTRY_DSN=your-sentry-dsn
+```
+
+## Deployment Strategy
+
+### Production Deployment
+```bash
+# Build and deploy script
+#!/bin/bash
+
+# Build Docker images
+docker-compose -f docker-compose.prod.yml build
+
+# Deploy with zero downtime
+docker-compose -f docker-compose.prod.yml up -d
+
+# Health check
+curl -f http://localhost/api/health || exit 1
+
+echo "Deployment successful!"
+```
+
+### Health Monitoring
+```typescript
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    services: {
+      database: 'connected',
+      redis: 'connected',
+      elasticsearch: 'connected'
+    }
+  });
+});
+```
+
+This web-focused structure removes all mobile-specific components while maintaining the core functionality. The UPI integration replaces multiple payment gateways with Indian-specific payment methods, and the Docker setup provides a complete deployment solution.

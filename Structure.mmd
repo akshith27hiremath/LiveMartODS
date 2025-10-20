@@ -1,0 +1,839 @@
+classDiagram
+    %% Abstract Base Classes
+    class User {
+        <<abstract>>
+        -userId: String
+        -email: String
+        -phone: String
+        -password: String
+        -profile: UserProfile
+        -isVerified: Boolean
+        -createdAt: Date
+        -lastActive: Date
+        +login(): AuthToken
+        +logout(): Boolean
+        +updateProfile(profile: UserProfile): Boolean
+        +resetPassword(newPassword: String): Boolean
+        +verifyOTP(otp: String): Boolean
+    }
+
+    class UserProfile {
+        -name: String
+        -address: Address
+        -location: GeoLocation
+        -avatar: String
+        -preferences: UserPreferences
+        +updateLocation(location: GeoLocation): Boolean
+        +updatePreferences(prefs: UserPreferences): Boolean
+        +getFormattedAddress(): String
+    }
+
+    class Address {
+        -street: String
+        -city: String
+        -state: String
+        -zipCode: String
+        -country: String
+        +getFormattedAddress(): String
+        +validateAddress(): Boolean
+    }
+
+    class GeoLocation {
+        -latitude: Double
+        -longitude: Double
+        +getDistanceTo(other: GeoLocation): Double
+        +isWithinRadius(center: GeoLocation, radius: Double): Boolean
+    }
+
+    %% User Implementations
+    class Customer {
+        -cart: ShoppingCart
+        -wishlist: List~Product~
+        -orderHistory: List~Order~
+        -loyaltyPoints: Integer
+        +browseProducts(filters: SearchFilter): List~Product~
+        +addToCart(product: Product, quantity: Integer): Boolean
+        +placeOrder(cart: ShoppingCart): Order
+        +trackOrder(orderId: String): OrderStatus
+        +provideFeedback(order: Order, feedback: Feedback): Boolean
+        +viewRecommendations(): List~Product~
+        +getWishlist(): List~Product~
+    }
+
+    class Retailer {
+        -inventory: Inventory
+        -store: Store
+        -customerBase: List~Customer~
+        -wholesalerOrders: List~WholesalerOrder~
+        -salesAnalytics: SalesAnalytics
+        +manageInventory(): InventoryManager
+        +addProduct(product: Product): Boolean
+        +updatePricing(productId: String, price: Money): Boolean
+        +orderFromWholesaler(items: List~OrderItem~): WholesalerOrder
+        +viewCustomerHistory(customerId: String): List~Order~
+        +generateSalesReport(period: DateRange): SalesReport
+    }
+
+    class Wholesaler {
+        -bulkInventory: BulkInventory
+        -retailerNetwork: List~Retailer~
+        -pricingStrategy: PricingStrategy
+        -distributionCenters: List~DistributionCenter~
+        +manageBulkInventory(): BulkInventoryManager
+        +setPricing(productId: String, strategy: PricingStrategy): Boolean
+        +approveRetailerOrder(order: WholesalerOrder): Boolean
+        +onboardRetailer(retailer: Retailer): Boolean
+        +analyzeRetailerPerformance(): List~RetailerMetrics~
+    }
+
+    %% Product Management
+    class Product {
+        -productId: String
+        -name: String
+        -description: String
+        -category: Category
+        -specifications: Map~String, String~
+        -images: List~String~
+        -basePrice: Money
+        -unit: String
+        -tags: List~String~
+        -isActive: Boolean
+        -createdBy: String
+        +getAverageRating(): Double
+        +getFeedbacks(): List~Feedback~
+        +isAvailable(): Boolean
+        +calculateDiscountedPrice(discount: Discount): Money
+    }
+
+    class Category {
+        -categoryId: String
+        -name: String
+        -parentCategory: Category
+        -subCategories: List~Category~
+        -icon: String
+        +getAllProducts(): List~Product~
+        +getSubCategories(): List~Category~
+        +getProductCount(): Integer
+    }
+
+    class Inventory {
+        -inventoryId: String
+        -productId: String
+        -ownerId: String
+        -currentStock: Integer
+        -reservedStock: Integer
+        -reorderLevel: Integer
+        -sellingPrice: Money
+        -discounts: List~Discount~
+        -lastUpdated: Date
+        +updateStock(quantity: Integer): Boolean
+        +reserveStock(quantity: Integer): Boolean
+        +releaseReservedStock(quantity: Integer): Boolean
+        +isLowStock(): Boolean
+        +calculateFinalPrice(): Money
+    }
+
+    class BulkInventory {
+        -warehouseId: String
+        -totalStock: Integer
+        -allocatedStock: Map~String, Integer~
+        -minimumOrderQuantity: Integer
+        +allocateToRetailer(retailerId: String, quantity: Integer): Boolean
+        +checkAvailability(quantity: Integer): Boolean
+    }
+
+    %% Order Management
+    class Order {
+        -orderId: String
+        -customerId: String
+        -retailerId: String
+        -items: List~OrderItem~
+        -orderType: OrderType
+        -status: OrderStatus
+        -totalAmount: Money
+        -deliveryAddress: Address
+        -scheduledDate: Date
+        -trackingInfo: TrackingInfo
+        -upiTransaction: UPITransaction
+        -createdAt: Date
+        +calculateTotal(): Money
+        +updateStatus(status: OrderStatus): Boolean
+        +addItem(item: OrderItem): Boolean
+        +removeItem(itemId: String): Boolean
+        +getEstimatedDelivery(): Date
+    }
+
+    class OrderItem {
+        -itemId: String
+        -productId: String
+        -quantity: Integer
+        -unitPrice: Money
+        -subtotal: Money
+        -discounts: List~Discount~
+        +calculateSubtotal(): Money
+        +applyDiscount(discount: Discount): Boolean
+    }
+
+    class ShoppingCart {
+        -cartId: String
+        -customerId: String
+        -items: List~CartItem~
+        -sessionExpiry: Date
+        +addItem(product: Product, quantity: Integer): Boolean
+        +removeItem(itemId: String): Boolean
+        +updateQuantity(itemId: String, quantity: Integer): Boolean
+        +calculateTotal(): Money
+        +checkout(): Order
+        +clear(): Boolean
+        +persistToLocalStorage(): Boolean
+        +loadFromLocalStorage(): Boolean
+    }
+
+    class CartItem {
+        -itemId: String
+        -productId: String
+        -quantity: Integer
+        -addedAt: Date
+        +isExpired(): Boolean
+        +getProduct(): Product
+    }
+
+    class WholesalerOrder {
+        -wholesalerOrderId: String
+        -retailerId: String
+        -wholesalerId: String
+        -items: List~OrderItem~
+        -status: OrderStatus
+        -requestedDate: Date
+        -approvedDate: Date
+        -deliveryDate: Date
+        +approve(): Boolean
+        +reject(reason: String): Boolean
+        +updateDeliveryDate(date: Date): Boolean
+    }
+
+    %% UPI Payment System
+    class UPITransaction {
+        -transactionId: String
+        -orderId: String
+        -amount: Money
+        -upiId: String
+        -paymentGateway: UPIGatewayType
+        -status: PaymentStatus
+        -merchantTransactionId: String
+        -gatewayTransactionId: String
+        -qrCode: String
+        -createdAt: Date
+        -processedAt: Date
+        +initiatePayment(): UPIPaymentResponse
+        +verifyPayment(): Boolean
+        +generateQRCode(): String
+        +checkStatus(): PaymentStatus
+    }
+
+    class Money {
+        -amount: Double
+        -currency: String
+        +add(other: Money): Money
+        +subtract(other: Money): Money
+        +multiply(factor: Double): Money
+        +getFormattedAmount(): String
+        +toINR(): String
+    }
+
+    class UPIGateway {
+        <<interface>>
+        +initiatePayment(transaction: UPITransaction): UPIPaymentResponse
+        +verifyTransaction(transactionId: String): Boolean
+        +generateQRCode(upiId: String, amount: Money): String
+        +checkPaymentStatus(merchantTransactionId: String): PaymentStatus
+    }
+
+    class PhonePeGateway {
+        -merchantId: String
+        -saltKey: String
+        -saltIndex: Integer
+        -hostUrl: String
+        +initiatePayment(transaction: UPITransaction): UPIPaymentResponse
+        +verifyTransaction(transactionId: String): Boolean
+        +generateQRCode(upiId: String, amount: Money): String
+        +checkPaymentStatus(merchantTransactionId: String): PaymentStatus
+        -generateChecksum(payload: String): String
+    }
+
+    class GooglePayGateway {
+        -merchantId: String
+        -environment: String
+        +initiatePayment(transaction: UPITransaction): UPIPaymentResponse
+        +verifyTransaction(transactionId: String): Boolean
+        +generateQRCode(upiId: String, amount: Money): String
+        +checkPaymentStatus(merchantTransactionId: String): PaymentStatus
+    }
+
+    class PaytmGateway {
+        -merchantId: String
+        -merchantKey: String
+        -environment: String
+        +initiatePayment(transaction: UPITransaction): UPIPaymentResponse
+        +verifyTransaction(transactionId: String): Boolean
+        +generateQRCode(upiId: String, amount: Money): String
+        +checkPaymentStatus(merchantTransactionId: String): PaymentStatus
+        -generateChecksum(params: Map): String
+    }
+
+    class UPIPaymentResponse {
+        -success: Boolean
+        -transactionId: String
+        -paymentUrl: String
+        -qrCode: String
+        -message: String
+        -redirectUrl: String
+        +isSuccessful(): Boolean
+        +getPaymentUrl(): String
+    }
+
+    %% Search and Navigation
+    class SearchService {
+        -elasticsearchClient: ElasticsearchClient
+        +searchProducts(query: String, filters: SearchFilter): SearchResult
+        +getAutoSuggestions(query: String): List~String~
+        +searchByLocation(location: GeoLocation, radius: Double): List~Store~
+        +getRecommendations(userId: String): List~Product~
+        +indexProduct(product: Product): Boolean
+        +updateProductIndex(productId: String, product: Product): Boolean
+    }
+
+    class SearchFilter {
+        -categories: List~String~
+        -priceRange: PriceRange
+        -location: GeoLocation
+        -radius: Double
+        -availability: Boolean
+        -rating: Double
+        +applyFilter(products: List~Product~): List~Product~
+        +addCategoryFilter(category: String): SearchFilter
+        +setPriceRange(min: Double, max: Double): SearchFilter
+    }
+
+    class SearchResult {
+        -products: List~Product~
+        -totalCount: Integer
+        -facets: Map~String, List~String~~
+        -suggestions: List~String~
+        -pagination: PaginationInfo
+        +getProducts(): List~Product~
+        +getFacets(): Map~String, List~String~~
+        +getTotalPages(): Integer
+    }
+
+    class PaginationInfo {
+        -currentPage: Integer
+        -totalPages: Integer
+        -pageSize: Integer
+        -totalItems: Integer
+        +getNextPage(): Integer
+        +getPreviousPage(): Integer
+        +hasNextPage(): Boolean
+        +hasPreviousPage(): Boolean
+    }
+
+    %% Store and Location
+    class Store {
+        -storeId: String
+        -name: String
+        -ownerId: String
+        -location: GeoLocation
+        -address: Address
+        -operatingHours: OperatingHours
+        -rating: Double
+        -isActive: Boolean
+        -deliveryRadius: Double
+        +isOpenNow(): Boolean
+        +getDistanceFrom(location: GeoLocation): Double
+        +getOperatingStatus(): String
+        +canDeliverTo(location: GeoLocation): Boolean
+    }
+
+    class OperatingHours {
+        -weeklySchedule: Map~DayOfWeek, TimeSlot~
+        -holidays: List~Date~
+        -specialHours: Map~Date, TimeSlot~
+        +isOpenAt(dateTime: DateTime): Boolean
+        +getNextOpenTime(): DateTime
+        +getTodaysHours(): TimeSlot
+    }
+
+    class TimeSlot {
+        -openTime: Time
+        -closeTime: Time
+        +isWithinSlot(time: Time): Boolean
+        +getDuration(): Duration
+    }
+
+    %% Feedback and Rating System
+    class Feedback {
+        -feedbackId: String
+        -userId: String
+        -productId: String
+        -orderId: String
+        -rating: Integer
+        -comment: String
+        -images: List~String~
+        -createdAt: Date
+        -isVerified: Boolean
+        -helpfulCount: Integer
+        +getAverageRating(): Double
+        +isHelpful(): Boolean
+        +reportInappropriate(): Boolean
+        +addResponse(response: String): Boolean
+    }
+
+    class Review {
+        -reviewId: String
+        -feedback: Feedback
+        -helpfulCount: Integer
+        -reportCount: Integer
+        -response: ReviewResponse
+        -isModerated: Boolean
+        +markHelpful(): Boolean
+        +addResponse(response: ReviewResponse): Boolean
+        +moderate(): Boolean
+    }
+
+    class ReviewResponse {
+        -responseId: String
+        -responderId: String
+        -responseText: String
+        -responseDate: Date
+        +getFormattedResponse(): String
+    }
+
+    %% Notification System
+    class NotificationService {
+        -emailService: EmailService
+        -smsService: SMSService
+        -webSocketService: SocketIOService
+        +sendEmailNotification(userId: String, notification: EmailNotification): Boolean
+        +sendSMSNotification(phone: String, message: String): Boolean
+        +sendWebNotification(userId: String, notification: WebNotification): Boolean
+        +scheduleNotification(notification: Notification, scheduleTime: Date): Boolean
+    }
+
+    class Notification {
+        <<abstract>>
+        -notificationId: String
+        -userId: String
+        -title: String
+        -message: String
+        -type: NotificationType
+        -data: Map~String, String~
+        -isRead: Boolean
+        -createdAt: Date
+        +markAsRead(): Boolean
+        +getDisplayText(): String
+    }
+
+    class EmailNotification {
+        -emailTemplate: String
+        -subject: String
+        -htmlContent: String
+        -attachments: List~String~
+        +sendEmail(): Boolean
+        +generateFromTemplate(): String
+    }
+
+    class SMSNotification {
+        -phoneNumber: String
+        -textContent: String
+        +sendSMS(): Boolean
+        +validatePhoneNumber(): Boolean
+    }
+
+    class WebNotification {
+        -iconUrl: String
+        -actionUrl: String
+        -priority: NotificationPriority
+        +sendWebPush(): Boolean
+        +createSocketEvent(): SocketEvent
+    }
+
+    %% Analytics and Reporting
+    class AnalyticsService {
+        -dataWarehouse: DataWarehouse
+        -metricsCollector: MetricsCollector
+        +trackUserBehavior(userId: String, action: String, data: Map~String, Object~): Boolean
+        +generateSalesReport(period: DateRange): SalesReport
+        +getCustomerInsights(customerId: String): CustomerInsights
+        +getInventoryAnalytics(inventoryId: String): InventoryAnalytics
+        +getPredictiveInsights(): List~PredictiveInsight~
+        +trackPageView(userId: String, page: String): Boolean
+        +trackConversion(userId: String, orderId: String): Boolean
+    }
+
+    class SalesReport {
+        -reportId: String
+        -period: DateRange
+        -totalSales: Money
+        -orderCount: Integer
+        -topProducts: List~Product~
+        -customerMetrics: CustomerMetrics
+        -chartData: ChartData
+        +generateChart(): Chart
+        +exportToPDF(): File
+        +exportToCSV(): File
+    }
+
+    class CustomerInsights {
+        -customerId: String
+        -totalOrders: Integer
+        -totalSpent: Money
+        -averageOrderValue: Money
+        -preferredCategories: List~Category~
+        -lastOrderDate: Date
+        -loyaltyScore: Double
+        +getLifetimeValue(): Money
+        +getPredictedChurn(): Double
+        +getRecommendedProducts(): List~Product~
+    }
+
+    %% Security and Authentication
+    class AuthenticationService {
+        -jwtService: JWTService
+        -otpService: OTPService
+        -oauthService: OAuthService
+        +authenticate(credentials: Credentials): AuthToken
+        +generateOTP(phone: String): Boolean
+        +verifyOTP(phone: String, otp: String): Boolean
+        +refreshToken(refreshToken: String): AuthToken
+        +revokeToken(token: String): Boolean
+        +authenticateWithGoogle(googleToken: String): AuthToken
+        +authenticateWithFacebook(facebookToken: String): AuthToken
+    }
+
+    class AuthToken {
+        -token: String
+        -refreshToken: String
+        -expiresAt: Date
+        -userId: String
+        -roles: List~Role~
+        -sessionId: String
+        +isValid(): Boolean
+        +hasRole(role: Role): Boolean
+        +refresh(): AuthToken
+        +revoke(): Boolean
+    }
+
+    class JWTService {
+        -secretKey: String
+        -refreshSecretKey: String
+        +generateToken(userId: String, roles: List~Role~): String
+        +verifyToken(token: String): TokenPayload
+        +generateRefreshToken(userId: String): String
+        +verifyRefreshToken(refreshToken: String): TokenPayload
+    }
+
+    class OTPService {
+        -redisClient: RedisClient
+        -smsService: SMSService
+        +generateOTP(phone: String): String
+        +verifyOTP(phone: String, otp: String): Boolean
+        +isOTPValid(phone: String, otp: String): Boolean
+        +resendOTP(phone: String): Boolean
+    }
+
+    %% Web-specific Services
+    class WebSocketService {
+        -socketIO: SocketIOServer
+        -connectedUsers: Map~String, SocketConnection~
+        +emitToUser(userId: String, event: String, data: Object): Boolean
+        +emitToRoom(room: String, event: String, data: Object): Boolean
+        +joinRoom(userId: String, room: String): Boolean
+        +leaveRoom(userId: String, room: String): Boolean
+        +broadcastOrderUpdate(orderId: String, status: OrderStatus): Boolean
+    }
+
+    class SessionService {
+        -redisClient: RedisClient
+        +createSession(userId: String): Session
+        +getSession(sessionId: String): Session
+        +updateSession(sessionId: String, data: Object): Boolean
+        +destroySession(sessionId: String): Boolean
+        +cleanExpiredSessions(): Boolean
+    }
+
+    class FileUploadService {
+        -s3Client: S3Client
+        -cloudinaryClient: CloudinaryClient
+        +uploadImage(file: File, folder: String): UploadResult
+        +deleteImage(imageUrl: String): Boolean
+        +resizeImage(imageUrl: String, dimensions: ImageDimensions): String
+        +generateThumbnail(imageUrl: String): String
+    }
+
+    %% Additional Support Classes
+    class TrackingInfo {
+        -trackingId: String
+        -currentStatus: OrderStatus
+        -statusHistory: List~StatusUpdate~
+        -estimatedDelivery: Date
+        -deliveryPersonId: String
+        -currentLocation: GeoLocation
+        +updateStatus(status: OrderStatus, location: GeoLocation): Boolean
+        +getStatusHistory(): List~StatusUpdate~
+        +getEstimatedTime(): Date
+    }
+
+    class StatusUpdate {
+        -status: OrderStatus
+        -timestamp: Date
+        -location: GeoLocation
+        -notes: String
+        +getFormattedUpdate(): String
+    }
+
+    class Discount {
+        -discountId: String
+        -code: String
+        -type: DiscountType
+        -value: Double
+        -minPurchase: Money
+        -maxDiscount: Money
+        -validFrom: Date
+        -validUntil: Date
+        -isActive: Boolean
+        +calculateDiscount(amount: Money): Money
+        +isValidFor(amount: Money, date: Date): Boolean
+        +getDiscountValue(): Double
+    }
+
+    class DiscountType {
+        <<enumeration>>
+        PERCENTAGE
+        FIXED_AMOUNT
+        BUY_ONE_GET_ONE
+        FREE_SHIPPING
+    }
+
+    class PriceRange {
+        -minPrice: Money
+        -maxPrice: Money
+        +isWithinRange(price: Money): Boolean
+        +getFormattedRange(): String
+    }
+
+    class DateRange {
+        -startDate: Date
+        -endDate: Date
+        +getDuration(): Integer
+        +contains(date: Date): Boolean
+        +getFormattedRange(): String
+    }
+
+    class ChartData {
+        -labels: List~String~
+        -datasets: List~Dataset~
+        -type: ChartType
+        +addDataset(dataset: Dataset): Boolean
+        +generateChartConfig(): Object
+    }
+
+    class Dataset {
+        -label: String
+        -data: List~Double~
+        -backgroundColor: String
+        -borderColor: String
+        +addDataPoint(value: Double): Boolean
+    }
+
+    class ChartType {
+        <<enumeration>>
+        LINE
+        BAR
+        PIE
+        DOUGHNUT
+        AREA
+    }
+
+    class Credentials {
+        -email: String
+        -password: String
+        -rememberMe: Boolean
+        +validate(): Boolean
+        +hashPassword(): String
+    }
+
+    class UserPreferences {
+        -categories: List~String~
+        -priceRange: PriceRange
+        -deliveryRadius: Double
+        -notificationSettings: NotificationSettings
+        -language: String
+        -currency: String
+        +updatePreference(key: String, value: Object): Boolean
+    }
+
+    class NotificationSettings {
+        -emailEnabled: Boolean
+        -smsEnabled: Boolean
+        -pushEnabled: Boolean
+        -orderUpdates: Boolean
+        -promotions: Boolean
+        +toggleNotification(type: String): Boolean
+    }
+
+    %% Enumerations
+    class OrderType {
+        <<enumeration>>
+        ONLINE
+        OFFLINE
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        OUT_FOR_DELIVERY
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+        CANCELLED
+    }
+
+    class UPIGatewayType {
+        <<enumeration>>
+        PHONEPE
+        GOOGLEPAY
+        PAYTM
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        ORDER_UPDATE
+        PAYMENT_CONFIRMATION
+        DELIVERY_NOTIFICATION
+        PROMOTION
+        SYSTEM_ALERT
+        LOW_STOCK_ALERT
+    }
+
+    class NotificationPriority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        URGENT
+    }
+
+    class Role {
+        <<enumeration>>
+        CUSTOMER
+        RETAILER
+        WHOLESALER
+        ADMIN
+    }
+
+    %% Relationships
+    User <|-- Customer
+    User <|-- Retailer
+    User <|-- Wholesaler
+    User *-- UserProfile
+    UserProfile *-- Address
+    UserProfile *-- GeoLocation
+
+    Customer *-- ShoppingCart
+    Customer o-- Order
+    Customer o-- Feedback
+
+    Retailer *-- Inventory
+    Retailer *-- Store
+    Retailer o-- WholesalerOrder
+
+    Wholesaler *-- BulkInventory
+    Wholesaler o-- Retailer
+
+    Order *-- OrderItem
+    Order *-- UPITransaction
+    Order *-- Address
+
+    ShoppingCart *-- CartItem
+
+    Product *-- Category
+    Product o-- Feedback
+    Product o-- Inventory
+
+    Inventory *-- Money
+    UPITransaction *-- Money
+    OrderItem *-- Money
+
+    UPIGateway <|.. PhonePeGateway
+    UPIGateway <|.. GooglePayGateway
+    UPIGateway <|.. PaytmGateway
+    UPITransaction o-- UPIGateway
+    UPITransaction *-- UPIPaymentResponse
+
+    SearchService *-- SearchFilter
+    SearchService *-- SearchResult
+    SearchResult *-- PaginationInfo
+
+    Store *-- GeoLocation
+    Store *-- Address
+    Store *-- OperatingHours
+    OperatingHours *-- TimeSlot
+
+    Feedback *-- Review
+    Review *-- ReviewResponse
+
+    Notification <|-- EmailNotification
+    Notification <|-- SMSNotification
+    Notification <|-- WebNotification
+    NotificationService *-- Notification
+
+    AnalyticsService *-- SalesReport
+    AnalyticsService *-- CustomerInsights
+
+    AuthenticationService *-- AuthToken
+    AuthenticationService *-- JWTService
+    AuthenticationService *-- OTPService
+    AuthToken *-- Role
+
+    Order *-- OrderType
+    Order *-- OrderStatus
+    Order *-- TrackingInfo
+    TrackingInfo *-- StatusUpdate
+    StatusUpdate *-- GeoLocation
+
+    UPITransaction *-- PaymentStatus
+    UPITransaction *-- UPIGatewayType
+
+    Notification *-- NotificationType
+    WebNotification *-- NotificationPriority
+
+    Discount *-- DiscountType
+    Discount *-- Money
+    Inventory o-- Discount
+    OrderItem o-- Discount
+
+    SearchFilter *-- PriceRange
+    PriceRange *-- Money
+
+    SalesReport *-- DateRange
+    SalesReport *-- ChartData
+    ChartData *-- Dataset
+    ChartData *-- ChartType
+
+    AuthenticationService *-- Credentials
+
+    UserProfile *-- UserPreferences
+    UserPreferences *-- PriceRange
+    UserPreferences *-- NotificationSettings
