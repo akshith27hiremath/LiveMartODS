@@ -66,8 +66,7 @@ services:
       - elasticsearch
     volumes:
       - ../server:/app
-      - /app/node_modules
-    command: npm run dev
+    command: sh -c "npm install && npm run dev"
     networks:
       - livemart-dev-network
 
@@ -87,8 +86,7 @@ services:
       - api
     volumes:
       - ../client:/app
-      - /app/node_modules
-    command: npm start
+    command: sh -c "npm install && npm start"
     networks:
       - livemart-dev-network
     stdin_open: true
