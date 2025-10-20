@@ -1,0 +1,154 @@
+# ========================================
+# Live MART - Git Ignore Configuration
+# ========================================
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+*.env
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+.npm
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+.nyc_output
+
+# Testing
+.cache/
+.jest/
+
+# IDEs and Editors
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads and temporary files
+uploads/
+temp/
+tmp/
+*.tmp
+
+# SSL Certificates (don't commit private keys!)
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+nginx/ssl/
+
+# MongoDB
+data/
+mongo-data/
+
+# Redis
+dump.rdb
+appendonly.aof
+
+# Elasticsearch
+elasticsearch-data/
+
+# AWS
+.aws/
+aws-exports.js
+
+# Cloudinary
+.cloudinary/
+
+# Secrets
+secrets.json
+credentials.json
+service-account.json
+
+# Miscellaneous
+*.bak
+*.cache
+*.swp
+*.swo
+.env.backup
+.cache
+
+# Production files (if needed, uncomment)
+# /client/build
+# /server/dist
+
+# Development files
+.eslintcache
+.stylelintcache
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# Backup files
+*.backup
+*.old
+
+# Local scripts
+local-scripts/
+
+# VS Code snippets
+.vscode/snippets/
