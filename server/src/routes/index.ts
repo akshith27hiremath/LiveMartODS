@@ -3,6 +3,7 @@ import passport from 'passport';
 import authRoutes from './auth.routes';
 import userRoutes from './user.routes';
 import { generateOAuthTokens } from '../services/oauth.service';
+import { getDatabaseStatus } from '../config/database';
 
 /**
  * Main Routes Index
@@ -13,10 +14,14 @@ const router = Router();
 
 // API health check
 router.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    message: 'API is running',
+  const dbStatus = getDatabaseStatus();
+
+  res.status(dbStatus.connected ? 200 : 503).json({
+    status: dbStatus.connected ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: dbStatus,
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 

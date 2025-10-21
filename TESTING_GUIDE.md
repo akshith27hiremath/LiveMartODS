@@ -510,6 +510,146 @@ docker-compose -f docker/docker-compose.dev.yml restart api
 
 ---
 
+## Step 11: Test OAuth Authentication (Google)
+
+### Prerequisites
+Before testing OAuth, you need to set up Google OAuth credentials. See **`GOOGLE_OAUTH_SETUP.md`** for detailed setup instructions.
+
+### Quick Setup Summary:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create OAuth 2.0 credentials
+3. Add Client ID and Secret to `.env.development`
+4. Restart the API container
+
+---
+
+### Test Google OAuth Login
+
+#### Method 1: Browser Test (Recommended)
+
+1. **Initiate OAuth Flow:**
+   - Open browser and navigate to: `http://localhost:5000/api/auth/google`
+   - You'll be redirected to Google's login page
+
+2. **Sign in with Google:**
+   - Use a Google account (must be added as test user in Google Console)
+   - Grant permissions to your app
+
+3. **Get JWT Tokens:**
+   - After successful login, you'll be redirected to the callback URL
+   - Response will show JSON with user data and tokens:
+   ```json
+   {
+     "success": true,
+     "message": "Google authentication successful",
+     "data": {
+       "user": {
+         "_id": "...",
+         "email": "yourname@gmail.com",
+         "userType": "CUSTOMER",
+         "profile": {
+           "name": "Your Name",
+           "avatar": "https://lh3.googleusercontent.com/..."
+         },
+         "oauth": {
+           "google": {
+             "id": "1234567890",
+             "email": "yourname@gmail.com"
+           }
+         },
+         "isVerified": true
+       },
+       "tokens": {
+         "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+         "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+       }
+     }
+   }
+   ```
+
+4. **Verify OAuth User:**
+   - Copy the `accessToken`
+   - Test with `/api/auth/me`:
+   ```bash
+   curl -X GET http://localhost:5000/api/auth/me \
+     -H "Authorization: Bearer YOUR_OAUTH_ACCESS_TOKEN"
+   ```
+
+---
+
+#### Method 2: Frontend Integration
+
+Create a login button in your React app:
+
+```jsx
+// Simple Google OAuth button
+<button onClick={() => {
+  window.location.href = 'http://localhost:5000/api/auth/google';
+}}>
+  Login with Google
+</button>
+```
+
+**For production**, you'd handle the callback properly and store tokens.
+
+---
+
+### Verify OAuth User in Database
+
+```bash
+# Connect to MongoDB
+docker exec -it livemart-mongodb-dev mongosh -u admin -p password123 --authenticationDatabase admin
+
+# Check OAuth users
+use livemart_dev
+db.users.find({ "oauth.google.id": { $exists: true } }).pretty()
+```
+
+**Expected:**
+- User created with Google email
+- `oauth.google.id` field populated
+- `isVerified: true` (auto-verified by Google)
+- No password field (OAuth users don't have passwords)
+
+---
+
+### Facebook OAuth (Optional)
+
+Same process as Google, but:
+1. Get credentials from [Facebook Developers](https://developers.facebook.com/)
+2. Add to `.env.development`:
+   ```bash
+   FACEBOOK_APP_ID=your-facebook-app-id
+   FACEBOOK_APP_SECRET=your-facebook-app-secret
+   FACEBOOK_CALLBACK_URL=http://localhost:5000/api/auth/facebook/callback
+   ```
+3. Test at: `http://localhost:5000/api/auth/facebook`
+
+---
+
+### OAuth Troubleshooting
+
+**Error: "Google OAuth not configured"**
+- Missing environment variables
+- Restart API container after adding variables
+
+**Error: "redirect_uri_mismatch"**
+- Callback URL doesn't match Google Console configuration
+- Must be exactly: `http://localhost:5000/api/auth/google/callback`
+
+**Error: "Access blocked"**
+- Email not added as test user in Google Console
+- App not published (use test mode)
+
+**User not created:**
+- Check server logs for errors
+- Verify MongoDB connection
+- Check Redis connection (stores tokens)
+
+See **`GOOGLE_OAUTH_SETUP.md`** for detailed troubleshooting.
+
+---
+
 ## Using Postman Collection (Recommended)
 
 I can create a Postman collection file that has all these requests pre-configured. Would you like me to create one? It would save you a lot of time!
@@ -520,7 +660,8 @@ I can create a Postman collection file that has all these requests pre-configure
 
 Once you've verified all these tests pass:
 1. ✅ Phase 2.2 is confirmed working
-2. ➡️ Ready to proceed to Phase 2.3 (Product/Order/Payment routes)
-3. 📊 Can start building the frontend authentication UI
+2. ✅ OAuth authentication works (if configured)
+3. ➡️ Ready to proceed to Phase 2.3 (Product/Order/Payment routes)
+4. 📊 Can start building the frontend authentication UI
 
 **Happy Testing! 🚀**

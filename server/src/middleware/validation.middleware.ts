@@ -11,7 +11,7 @@ import { logger } from '../utils/logger';
  * Generic validation middleware factory
  */
 export const validate = (schema: Joi.ObjectSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false, // Return all errors
       stripUnknown: true, // Remove unknown fields
@@ -25,11 +25,12 @@ export const validate = (schema: Joi.ObjectSchema) => {
 
       logger.warn('❌ Validation error:', errors);
 
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Validation error',
         errors,
       });
+      return;
     }
 
     // Replace req.body with validated and sanitized value
@@ -92,6 +93,14 @@ export const registerSchema = Joi.object({
   // Optional fields for retailers/wholesalers
   businessName: Joi.string().min(2).max(200).trim(),
   gstin: Joi.string().pattern(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/),
+
+  // Bank details for wholesalers
+  bankDetails: Joi.object({
+    accountNumber: Joi.string().required(),
+    ifscCode: Joi.string().required(),
+    bankName: Joi.string().required(),
+    accountHolderName: Joi.string().required(),
+  }),
 });
 
 // Login Schema

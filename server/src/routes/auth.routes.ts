@@ -17,6 +17,33 @@ import {
 const router = Router();
 
 /**
+ * Base route - Auth API info
+ */
+router.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    message: 'Authentication API',
+    endpoints: {
+      public: [
+        'POST /api/auth/register - Register new user',
+        'POST /api/auth/login - Login user',
+        'POST /api/auth/refresh - Refresh access token',
+        'POST /api/auth/forgot-password - Request password reset',
+        'POST /api/auth/reset-password - Reset password with token',
+        'GET /api/auth/verify-email/:token - Verify email address',
+        'GET /api/auth/google - Google OAuth',
+        'GET /api/auth/facebook - Facebook OAuth',
+      ],
+      protected: [
+        'GET /api/auth/me - Get current user',
+        'POST /api/auth/logout - Logout user',
+        'POST /api/auth/logout-all - Logout from all devices',
+      ],
+    },
+  });
+});
+
+/**
  * Public Routes (no authentication required)
  */
 

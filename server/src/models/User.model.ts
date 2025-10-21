@@ -55,18 +55,32 @@ export interface IUserProfile {
   preferences: IUserPreferences;
 }
 
+// OAuth Interface
+export interface IOAuth {
+  google?: {
+    id: string;
+    email: string;
+  };
+  facebook?: {
+    id: string;
+    email: string;
+  };
+}
+
 // Base User Interface
 export interface IUser extends Document {
   email: string;
   phone: string;
-  password: string;
+  password?: string;  // Optional because OAuth users may not have password
   userType: UserType;
   profile: IUserProfile;
+  oauth?: IOAuth;
   isVerified: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   lastActive: Date;
+  lastLogin?: Date;
 
   // Methods
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -209,15 +223,16 @@ const UserSchema = new Schema<IUser>({
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
+    required: false,  // Not required for OAuth users
     unique: true,
+    sparse: true,  // Allow null values for unique index
     trim: true,
     match: [/^\+?[1-9]\d{1,14}$/, 'Please provide a valid phone number'],
     index: true,
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: false,  // Not required for OAuth users
     minlength: [6, 'Password must be at least 6 characters'],
     select: false, // Don't return password by default
   },
@@ -230,6 +245,16 @@ const UserSchema = new Schema<IUser>({
   profile: {
     type: UserProfileSchema,
     required: true,
+  },
+  oauth: {
+    google: {
+      id: { type: String },
+      email: { type: String },
+    },
+    facebook: {
+      id: { type: String },
+      email: { type: String },
+    },
   },
   isVerified: {
     type: Boolean,
@@ -244,6 +269,9 @@ const UserSchema = new Schema<IUser>({
   lastActive: {
     type: Date,
     default: Date.now,
+  },
+  lastLogin: {
+    type: Date,
   },
 }, {
   timestamps: true, // Adds createdAt and updatedAt
@@ -263,8 +291,8 @@ UserSchema.index({ 'profile.location': '2dsphere' }); // Geospatial index
  * Hash password before saving if it's modified
  */
 UserSchema.pre('save', async function(next) {
-  // Only hash password if it's modified or new
-  if (!this.isModified('password')) {
+  // Only hash password if it's modified or new AND password exists
+  if (!this.isModified('password') || !this.password) {
     return next();
   }
 
@@ -284,6 +312,10 @@ UserSchema.pre('save', async function(next) {
 // Compare password for authentication
 UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   try {
+    // Return false if password doesn't exist (OAuth users)
+    if (!this.password) {
+      return false;
+    }
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
     return false;
@@ -299,7 +331,9 @@ UserSchema.methods.updateLastActive = async function(): Promise<void> {
 // Get public profile (remove sensitive data)
 UserSchema.methods.getPublicProfile = function(): Partial<IUser> {
   const userObject = this.toObject();
-  delete userObject.password;
+  if (userObject.password) {
+    delete userObject.password;
+  }
   return userObject;
 };
 

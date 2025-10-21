@@ -103,7 +103,8 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await authService.logout(req.user._id.toString(), req.token);
+    const userId = (req.user as any)._id.toString();
+    await authService.logout(userId, req.token);
 
     res.status(200).json({
       success: true,
@@ -133,7 +134,8 @@ export const logoutAll = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await authService.logoutAll(req.user._id.toString());
+    const userId = (req.user as any)._id.toString();
+    await authService.logoutAll(userId);
 
     res.status(200).json({
       success: true,
@@ -186,6 +188,13 @@ export const getCurrentUser = async (req: Request, res: Response): Promise<void>
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
+    if (!token) {
+      res.status(400).json({
+        success: false,
+        message: 'Token is required',
+      });
+      return;
+    }
     await authService.verifyEmail(token);
 
     res.status(200).json({

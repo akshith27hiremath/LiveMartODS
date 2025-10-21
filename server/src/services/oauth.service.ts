@@ -49,7 +49,7 @@ export const initializeOAuth = (): void => {
           callbackURL: GOOGLE_CALLBACK_URL,
           scope: ['profile', 'email'],
         },
-        async (accessToken, refreshToken, profile, done) => {
+        async (_accessToken, _refreshToken, profile, done) => {
           try {
             // Check if user already exists
             let user = await User.findOne({
@@ -116,7 +116,7 @@ export const initializeOAuth = (): void => {
           callbackURL: FACEBOOK_CALLBACK_URL,
           profileFields: ['id', 'displayName', 'email', 'photos'],
         },
-        async (accessToken, refreshToken, profile, done) => {
+        async (_accessToken, _refreshToken, profile, done) => {
           try {
             // Check if user already exists
             let user = await User.findOne({

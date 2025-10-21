@@ -4,7 +4,7 @@
   "description": "Live MART Backend API - E-commerce platform connecting customers, retailers, and wholesalers",
   "main": "dist/app.js",
   "scripts": {
-    "dev": "nodemon --exec ts-node -r tsconfig-paths/register src/app.ts",
+    "dev": "nodemon --exec ts-node --transpile-only -r tsconfig-paths/register src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
     "start:prod": "NODE_ENV=production node dist/app.js",
@@ -15,8 +15,8 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
-    "db:seed": "ts-node src/scripts/seed.ts",
-    "db:migrate": "ts-node src/scripts/migrate.ts"
+    "db:seed": "ts-node --transpile-only src/scripts/seed.ts",
+    "db:migrate": "ts-node --transpile-only src/scripts/migrate.ts"
   },
   "keywords": [
     "ecommerce",

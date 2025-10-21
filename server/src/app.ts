@@ -1,8 +1,12 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import passport from 'passport';
 import dotenv from 'dotenv';
-import { initializeDatabase, getDatabaseStatus } from './config/database';
+import { initializeDatabase } from './config/database';
+import { redisService } from './config/redis';
+import { initializeOAuth } from './services/oauth.service';
 import { logger } from './utils/logger';
+import apiRoutes from './routes';
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +23,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Initialize Passport
+app.use(passport.initialize());
+initializeOAuth();
+
 // Basic routes for testing
 app.get('/', (_req: Request, res: Response) => {
   res.json({
@@ -28,20 +36,10 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-// Health check endpoint
-app.get('/api/health', (_req: Request, res: Response) => {
-  const dbStatus = getDatabaseStatus();
+// Mount API routes
+app.use('/api', apiRoutes);
 
-  res.status(dbStatus.connected ? 200 : 503).json({
-    status: dbStatus.connected ? 'healthy' : 'unhealthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    database: dbStatus,
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
-
-// Test database models endpoint
+// Test database models endpoint (legacy - for backward compatibility)
 app.get('/api/test/models', async (_req: Request, res: Response) => {
   try {
     // Import models (this will register them with mongoose)
@@ -77,10 +75,10 @@ app.get('/api/test/models', async (_req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use((req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({
     error: 'Not Found',
-    message: `Route ${req.method} ${req.path} not found`,
+    message: 'Route not found',
   });
 });
 
@@ -100,6 +98,10 @@ const startServer = async () => {
     logger.info('🔌 Connecting to database...');
     await initializeDatabase();
 
+    // Initialize Redis connection
+    logger.info('🔌 Connecting to Redis...');
+    await redisService.connect();
+
     // Start Express server
     app.listen(PORT, () => {
       logger.info('=================================');
@@ -108,6 +110,7 @@ const startServer = async () => {
       logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       logger.info(`🔗 URL: http://localhost:${PORT}`);
       logger.info(`💚 Health Check: http://localhost:${PORT}/api/health`);
+      logger.info(`🔐 Auth Endpoints: http://localhost:${PORT}/api/auth`);
       logger.info('=================================');
     });
   } catch (error) {

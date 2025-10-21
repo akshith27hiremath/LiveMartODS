@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.model';
 import Customer from '../models/Customer.model';
 import Retailer from '../models/Retailer.model';
@@ -20,6 +21,12 @@ export interface RegisterData {
   };
   businessName?: string;
   gstin?: string;
+  bankDetails?: {
+    accountNumber: string;
+    ifscCode: string;
+    bankName: string;
+    accountHolderName: string;
+  };
 }
 
 export interface LoginData {
@@ -73,10 +80,14 @@ class AuthService {
           if (!data.businessName || !data.gstin) {
             throw new Error('Business name and GSTIN are required for wholesalers');
           }
+          if (!data.bankDetails) {
+            throw new Error('Bank details are required for wholesalers');
+          }
           user = await Wholesaler.create({
             ...baseData,
             businessName: data.businessName,
             gstin: data.gstin,
+            bankDetails: data.bankDetails,
             minimumOrderValue: 1000, // Default minimum order
           });
           break;
@@ -86,20 +97,23 @@ class AuthService {
       }
 
       // Generate tokens
+      const userId = (user._id as mongoose.Types.ObjectId).toString();
       const tokens = jwtService.generateTokenPair({
-        userId: user._id.toString(),
+        userId,
         email: user.email,
-        userType: user.userType,
+        userType: user.userType as 'CUSTOMER' | 'RETAILER' | 'WHOLESALER',
       });
 
       // Store refresh token in Redis
-      await jwtService.storeRefreshToken(user._id.toString(), tokens.refreshToken);
+      await jwtService.storeRefreshToken(userId, tokens.refreshToken);
 
       logger.info(`✅ New user registered: ${user.email} (${user.userType})`);
 
       // Remove password from response
       const userObject = user.toObject();
-      delete userObject.password;
+      if (userObject.password) {
+        delete userObject.password;
+      }
 
       return {
         user: userObject,
@@ -116,8 +130,8 @@ class AuthService {
    */
   async login(data: LoginData): Promise<{ user: any; tokens: TokenPair }> {
     try {
-      // Find user by email
-      const user = await User.findOne({ email: data.email });
+      // Find user by email (must select password field explicitly)
+      const user = await User.findOne({ email: data.email }).select('+password');
       if (!user) {
         throw new Error('Invalid email or password');
       }
@@ -138,20 +152,23 @@ class AuthService {
       await user.save();
 
       // Generate tokens
+      const userId = (user._id as mongoose.Types.ObjectId).toString();
       const tokens = jwtService.generateTokenPair({
-        userId: user._id.toString(),
+        userId,
         email: user.email,
-        userType: user.userType,
+        userType: user.userType as 'CUSTOMER' | 'RETAILER' | 'WHOLESALER',
       });
 
       // Store refresh token in Redis
-      await jwtService.storeRefreshToken(user._id.toString(), tokens.refreshToken);
+      await jwtService.storeRefreshToken(userId, tokens.refreshToken);
 
       logger.info(`✅ User logged in: ${user.email} (${user.userType})`);
 
       // Remove password from response
       const userObject = user.toObject();
-      delete userObject.password;
+      if (userObject.password) {
+        delete userObject.password;
+      }
 
       return {
         user: userObject,
@@ -184,14 +201,15 @@ class AuthService {
       }
 
       // Generate new token pair
+      const userId = (user._id as mongoose.Types.ObjectId).toString();
       const tokens = jwtService.generateTokenPair({
-        userId: user._id.toString(),
+        userId,
         email: user.email,
-        userType: user.userType,
+        userType: user.userType as 'CUSTOMER' | 'RETAILER' | 'WHOLESALER',
       });
 
       // Update stored refresh token
-      await jwtService.storeRefreshToken(user._id.toString(), tokens.refreshToken);
+      await jwtService.storeRefreshToken(userId, tokens.refreshToken);
 
       logger.info(`✅ Token refreshed for user: ${user.email}`);
 
